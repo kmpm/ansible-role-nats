@@ -1,0 +1,14 @@
+[Unit]
+Description=NATS Enterprise Messaging System
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/nats/nats.pid
+RuntimeDirectory=nats
+User=nats
+Group=nats
+ExecStart=/opt/nats/nats-server -c /etc/nats.conf
+
+[Install]
+WantedBy=multi-user.target

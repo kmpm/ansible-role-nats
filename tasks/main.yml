@@ -1,0 +1,72 @@
+---
+# tasks file for nats
+
+- name: Create the nats group
+  group: name=nats state=present system=yes
+
+- name: Create the nats user
+  user: name=nats groups=nats append=yes
+
+- name: "check if version {{ nats_version }} exists"
+  stat:
+    path: "{{ nats_folder }}/nats-server"
+  register: nats_server
+
+
+
+- name: "install nats-server {{ nats_version }}"
+  block:
+    - name: unarchive nats-server
+      unarchive:
+        src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_version }}/nats-server-v{{ nats_version }}-linux-amd64.zip"
+        dest: /tmp
+        copy: no
+
+    - name: create nats directory
+      file: 
+        path: "{{ nats_folder }}" 
+        state: directory
+
+    - name: move nats files
+      copy: 
+        src: "/tmp/nats-server-v{{ nats_version }}-linux-amd64/" 
+        dest: "{{ nats_folder }}" 
+        remote_src: yes 
+        directory_mode: yes
+
+    - name: make nats-server executable
+      file: 
+        path: "{{ nats_folder }}/nats-server"
+        mode: 0755
+
+  when: nats_server.stat.exists == false
+
+- name: link version foler
+  file:
+    src: "{{ nats_folder }}"
+    dest: /opt/nats
+    state: link
+  register: nats_link
+
+- name: prepare logfile
+  file:
+    path: /var/log/nats.log
+    group: nats
+    mode: 0664
+    state: touch
+
+  
+- name: service template
+  template:
+    src: nats.service.j2
+    dest: /etc/systemd/system/nats.service
+  notify: 
+  - reload systemd
+
+- name: Create /etc/nats.conf file
+  template: src=nats.conf.j2 dest=/etc/nats.conf owner=nats group=nats mode=0644
+  notify: 
+  - restart nats
+
+- name: start nats
+  service: name=nats state=restarted enabled=yes
