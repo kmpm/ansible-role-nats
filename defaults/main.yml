@@ -1,10 +1,11 @@
 ---
 # defaults file for nats
 
-nats_ansible_host_group: nats
+
 nats_version: 2.1.9
 nats_folder: "/opt/nats-v{{ nats_version }}"
 
-nats_gateway_entries:
-  - {name: 'A', url: 'http://localhost:7222'}
-  - {name: 'B': url: ''}
+nats_user: nats
+nats_group: nats
+
+nats_cli_version: 0.0.21

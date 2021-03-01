@@ -5,4 +5,4 @@
   command: systemctl daemon-reload
 
 - name: restart nats
-  service: name=nats state=restarted
+  service: name=nats state=restarted enabled=yes

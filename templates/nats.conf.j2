@@ -1,5 +1,11 @@
-# Client port of 4222 on all interfaces
+# Generated automatically by Ansible
+
+# interface to listen on
+host: {{ nats_address | default('0.0.0.0') }}
+
+# Client port of 4222 on interfaces defined above
 port: 4222
+
 
 # HTTP monitoring port
 monitor_port: 8222
@@ -23,18 +29,31 @@ cluster {
   # This Docker image has none by default, but you can pass a
   # flag to the gnatsd docker image to create one to an existing server.
   routes = [
-{% for host in groups[nats_ansible_host_group] %}
-    nats-route://ruser:T0pS3cr3t@{{ hostvars[host].ansible_default_ipv4.address }}:6222
-{% endfor %}
+    {% if nats_ansible_host_group | default(None) %}
+    {% for host in groups[nats_ansible_host_group] %}
+    nats-route://ruser:T0pS3cr3t@{{ hostvars[host]['nats_address'] | default(hostvars[host].ansible_default_ipv4.address) }}:6222
+    {% endfor %}
+    {% endif %}
   ]
 }
 
-{% if nats_gateway %}
+{% macro render_gatway(ng) -%}
+  
+{%- endmacro %}
+
+{% if nats_gateway | default(None) %}
 gateway {
+  name: "{{nats_gateway.name}}"
+  listen: "{{nats_address}}:{{nats_gateway.port | default('7222')}}"
+  authorization: {
+    user: "{{ nats_gateway.user | default('gwu') }}"
+    password: "{{ nats_gateway.password | default('gwp') }}"
+  }
   gateways: [
-    {% for gateway in nats_gateway_entries %}
-    {name: "{{ gateway.name }}", url: "{{ gateway.url }}" },
-    {% endfor %}
+{% for grp in nats_gateway.ansible_host_groups %}{% for host in groups[grp] %}
+{% set ng = hostvars[host]['nats_gateway'] %}
+    {name: "{{ng.name}}", url: "nats://{{ ng.user|default('gwu') }}:{{ ng.password|default('gwp') }}@{{ hostvars[host]['nats_address'] | default(hostvars[host].ansible_default_ipv4.address) }}:{{ng.port | default('7222')}}"},
+{% endfor %}{% endfor %}
   ]
 }
 {% endif %}

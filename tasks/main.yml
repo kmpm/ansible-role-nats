@@ -1,18 +1,25 @@
 ---
 # tasks file for nats
 
+- name: gather os specific tasks
+  include_tasks: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}.yml"
+    - "{{ ansible_distribution }}.yml"
+
 - name: Create the nats group
-  group: name=nats state=present system=yes
+  group: name="{{ nats_group }}" state=present system=yes
 
 - name: Create the nats user
-  user: name=nats groups=nats append=yes
+  user: name="{{ nats_user }}" groups="{{ nats_group }}" append=yes
+
+- name: install nats cli if needed
+  include_tasks: install_client.yml
 
 - name: "check if version {{ nats_version }} exists"
   stat:
     path: "{{ nats_folder }}/nats-server"
   register: nats_server
-
-
 
 - name: "install nats-server {{ nats_version }}"
   block:
@@ -47,11 +54,13 @@
     dest: /opt/nats
     state: link
   register: nats_link
+  notify:
+    - restart nats
 
 - name: prepare logfile
   file:
     path: /var/log/nats.log
-    group: nats
+    group: "{{ nats_group }}"
     mode: 0664
     state: touch
 
@@ -64,9 +73,11 @@
   - reload systemd
 
 - name: Create /etc/nats.conf file
-  template: src=nats.conf.j2 dest=/etc/nats.conf owner=nats group=nats mode=0644
+  template: 
+    src: nats.conf.j2 
+    dest: /etc/nats.conf 
+    owner: "{{ nats_user }}"
+    group: "{{ nats_group }}"
+    mode: 0644
   notify: 
   - restart nats
-
-- name: start nats
-  service: name=nats state=restarted enabled=yes
