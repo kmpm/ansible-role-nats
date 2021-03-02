@@ -1,0 +1,9 @@
+---
+- name: install logrotate
+  apt:
+    name: logrotate
+
+- name: configure logrotate for nats-server
+  template: 
+    src: logrotate.j2 
+    dest: "/etc/logrotate.d/nats-server" 

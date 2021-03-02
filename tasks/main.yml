@@ -64,6 +64,11 @@
     mode: 0664
     state: touch
 
+- name: logrotate
+  include_tasks: "{{ item }}"
+  with_first_found:
+    - "logrotate-{{ ansible_distribution }}-{{ ansible_distribution_major_version}}.yml"
+    - "logrotate-{{ ansible_distribution }}.yml"
 
 - name: service template
   template:
