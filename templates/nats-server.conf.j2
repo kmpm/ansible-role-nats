@@ -44,7 +44,7 @@ cluster {
 {% if nats_gateway | default(None) %}
 gateway {
   name: "{{nats_gateway.name}}"
-  listen: "{{nats_address}}:{{nats_gateway.port | default('7222')}}"
+  listen: "{{nats_address|default('0.0.0.0')}}:{{nats_gateway.port | default('7222')}}"
   authorization: {
     user: "{{ nats_gateway.user | default('gwu') }}"
     password: "{{ nats_gateway.password | default('gwp') }}"
@@ -54,6 +54,9 @@ gateway {
 {% set ng = hostvars[host]['nats_gateway'] %}
     {name: "{{ng.name}}", url: "nats://{{ ng.user|default('gwu') }}:{{ ng.password|default('gwp') }}@{{ hostvars[host]['nats_address'] | default(hostvars[host].ansible_default_ipv4.address) }}:{{ng.port | default('7222')}}"},
 {% endfor %}{% endfor %}
+{% for entry in nats_gateway.gateways %}
+    {name: "{{entry.name}}", url: "nats://{{ entry.user|default('gwu') }}:{{ entry.password|default('gwp') }}@{{ entry.host }}:{{entry.port | default('7222')}}"},
+{% endfor %}
   ]
 }
 {% endif %}
