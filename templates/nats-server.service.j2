@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-PIDFile=/run/nats/nats.pid
-RuntimeDirectory=nats
+PIDFile=/run/nats-server/nats-server.pid
+RuntimeDirectory=nats-server
 User=nats
 Group=nats
-ExecStart=/opt/nats/nats-server -c /etc/nats.conf
+ExecStart=/opt/nats/nats-server -c /etc/nats-server.conf
 
 [Install]
 WantedBy=multi-user.target

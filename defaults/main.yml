@@ -9,3 +9,7 @@ nats_user: nats
 nats_group: nats
 
 nats_cli_version: 0.0.21
+
+nats_server_logfile: /var/log/nats-server.log
+nats_server_pidfile: /run/nats-server/nats-server.pid
+nats_server_config: /etc/nats-server.conf

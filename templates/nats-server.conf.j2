@@ -62,7 +62,7 @@ gateway {
 debug:   true
 trace:   false
 logtime: false
-log_file: "/var/log/nats.log"
+log_file: "{{nats_server_logfile}}"
 
 # pid file
-pid_file: "/run/nats/nats.pid"
+pid_file: "{{nats_server_pidfile}}"

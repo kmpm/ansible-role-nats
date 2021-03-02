@@ -55,29 +55,29 @@
     state: link
   register: nats_link
   notify:
-    - restart nats
+    - restart nats-server
 
-- name: prepare logfile
+- name: "prepare {{ nats_server_logfile }}"
   file:
-    path: /var/log/nats.log
+    path: "{{ nats_server_logfile }}"
     group: "{{ nats_group }}"
     mode: 0664
     state: touch
 
-  
+
 - name: service template
   template:
-    src: nats.service.j2
-    dest: /etc/systemd/system/nats.service
+    src: nats-server.service.j2
+    dest: /etc/systemd/system/nats-server.service
   notify: 
   - reload systemd
 
-- name: Create /etc/nats.conf file
+- name: "Create {{ nats_server_config }} file"
   template: 
-    src: nats.conf.j2 
-    dest: /etc/nats.conf 
+    src: nats-server.conf.j2 
+    dest: "{{ nats_server_config }}" 
     owner: "{{ nats_user }}"
     group: "{{ nats_group }}"
     mode: 0644
   notify: 
-  - restart nats
+  - restart nats-server
