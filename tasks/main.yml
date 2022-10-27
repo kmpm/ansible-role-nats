@@ -1,88 +1,172 @@
 ---
 # tasks file for nats
 
-- name: gather os specific tasks
-  include_tasks: "{{ item }}"
+- name: Gather os specific vars
+  ansible.builtin.include_vars: "{{ item }}"
   with_first_found:
-    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}.yml"
-    - "{{ ansible_distribution }}.yml"
+    - files:
+        - '{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml'
+        - '{{ ansible_distribution }}.yml'
+        - '{{ ansible_os_family }}.yml'
+      skip: true
+      paths:
+        - '{{ role_path }}/vars'
 
-- name: Create the nats group
-  group: name="{{ nats_group }}" state=present system=yes
+- name: Gather os specific tasks
+  ansible.builtin.include_tasks: "{{ item }}"
+  with_first_found:
+    - files:
+        - '{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml'
+        - '{{ ansible_distribution }}.yml'
+        - '{{ ansible_os_family }}.yml'
+      skip: true
+      paths:
+        - '{{ role_path }}/tasks'
 
-- name: Create the nats user
-  user: name="{{ nats_user }}" groups="{{ nats_group }}" append=yes
+- name: Create directory {{ nats_parent_install_dir }}/bin
+  become: true
+  become_user: root
+  ansible.builtin.file: 
+    path: "{{ nats_parent_install_dir }}/bin" 
+    mode: 0755
+    state: directory
 
-- name: install nats cli if needed
-  include_tasks: install_client.yml
+- name: Check for existing app in {{ nats_install_dir }}
+  ansible.builtin.stat:
+    path: '{{ nats_install_dir }}'
+  changed_when: false
+  register: app_binary
 
-- name: "check if version {{ nats_version }} exists"
-  stat:
-    path: "{{ nats_folder }}/nats-server"
-  register: nats_server
-
-- name: "install nats-server {{ nats_version }}"
+- when: not app_binary.stat.exists
   block:
-    - name: unarchive nats-server
-      unarchive:
-        src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_version }}/nats-server-v{{ nats_version }}-linux-amd64.zip"
-        dest: /tmp
-        copy: no
+    - name: Download {{ nats_url }}
+      ansible.builtin.get_url:
+        url: '{{ nats_url }}'
+        dest: '{{ nats_tmp_zip }}'
+        mode: 0644
 
-    - name: create nats directory
-      file: 
-        path: "{{ nats_folder }}" 
+    - name: Create {{ nats_install_dir }}
+      when: nats_release_map[nats_app].mkdir
+      ansible.builtin.file: 
+        path: "{{ nats_install_dir }}" 
+        mode: 0755
         state: directory
 
-    - name: move nats files
-      copy: 
-        src: "/tmp/nats-server-v{{ nats_version }}-linux-amd64/" 
-        dest: "{{ nats_folder }}" 
-        remote_src: yes 
-        directory_mode: yes
+    - name: Uarchiving {{ nats_tmp_zip }} to {{ nats_install_dir }}
+      become: true
+      become_user: root
+      unarchive:
+        remote_src: true
+        src: '{{ nats_tmp_zip }}'
+        dest: '{{ nats_install_dir if nats_release_map[nats_app].mkdir else nats_parent_install_dir }}'
+        # creates: '{{ nats_install_dir }}'
 
-    - name: make nats-server executable
-      file: 
-        path: "{{ nats_folder }}/nats-server"
-        mode: 0755
+  always:
+    - name: Remove {{ nats_tmp_zip }}
+      become: true
+      become_user: root
+      file:
+        path: '{{ nats_tmp_zip }}'
+        state: absent
 
-  when: nats_server.stat.exists == false
-
-- name: link version foler
+- name: Linking '{{ nats_link_src }}' to '{{ nats_link_dest }}'
+  become: true
+  become_user: root
   file:
-    src: "{{ nats_folder }}"
-    dest: /opt/nats
+    src: '{{ nats_link_src }}'
+    dest: '{{ nats_link_dest }}'
     state: link
-  register: nats_link
-  notify:
-    - restart nats-server
 
-- name: "prepare {{ nats_server_logfile }}"
-  file:
-    path: "{{ nats_server_logfile }}"
-    group: "{{ nats_group }}"
-    mode: 0664
-    state: touch
-
-- name: logrotate
-  include_tasks: "{{ item }}"
-  with_first_found:
-    - "logrotate-{{ ansible_distribution }}-{{ ansible_distribution_major_version}}.yml"
-    - "logrotate-{{ ansible_distribution }}.yml"
-
-- name: service template
+- name: include in shell...
+  become: true
+  become_user: root
+  with_items:
+    - t: nats.sh.j2
+      f: 'nats.sh'
+      d: /etc/profile.d
   template:
-    src: nats-server.service.j2
-    dest: /etc/systemd/system/nats-server.service
-  notify: 
-  - reload systemd
+    src: '{{ item.t }}'
+    dest: '{{ item.d }}/{{ item.f }}'
+    mode: '{{ item.m | default("0644") }}'
 
-- name: "Create {{ nats_server_config }} file"
-  template: 
-    src: nats-server.conf.j2 
-    dest: "{{ nats_server_config }}" 
-    owner: "{{ nats_user }}"
-    group: "{{ nats_group }}"
-    mode: 0644
-  notify: 
-  - restart nats-server
+- name: Prepare for server
+  when: nats_app == 'nats-server'
+  block:
+    - name: Create the nats group
+      ansible.builtin.group: name="{{ nats_group }}" state=present system=yes
+
+    - name: Create the nats user
+      ansible.builtin.user: name="{{ nats_user }}" groups="{{ nats_group }}" append=yes
+
+    
+# - name: Install nats cli if needed
+#   ansible.builtin.include_tasks: install_client.yml
+
+# - name: "Check if existing nats binary"
+#   ansible.builtin.stat:
+#     path: "{{ nats_folder }}/nats-server"
+#   register: nats_server
+
+# - name: "Install nats-server {{ nats_version }}"
+#   when: not nats_server.stat.exists 
+#   block:
+#     - name: Unarchive nats-server
+#       ansible.builtin.unarchive:
+#         src: "https://github.com/nats-io/nats-server/releases/download/v{{ nats_version }}/nats-server-v{{ nats_version }}-linux-amd64.zip"
+#         dest: /tmp
+#         copy: no
+
+#     - name: Create nats directory
+#       ansible.builtin.file: 
+#         path: "{{ nats_folder }}" 
+#         mode: 0755
+#         state: directory
+
+#     - name: Move nats-server file
+#       ansible.builtin.copy: 
+#         src: "/tmp/nats-server-v{{ nats_version }}-linux-amd64/nats-server" 
+#         dest: "{{ nats_folder }}/nats-server" 
+#         mode: 0755
+#         remote_src: yes 
+
+  
+
+# - name: Link version foler
+#   ansible.builtin.file:
+#     src: "{{ nats_folder }}"
+#     dest: /opt/nats
+#     state: link
+#   register: nats_link
+#   notify:
+#     - restart nats-server
+
+# - name: "Prepare {{ nats_server_logfile }}"
+#   ansible.builtin.file:
+#     path: "{{ nats_server_logfile }}"
+#     group: "{{ nats_group }}"
+#     mode: 0664
+#     state: touch
+
+# - name: Include logrotate
+#   ansible.builtin.include_tasks: "{{ item }}"
+#   with_first_found:
+#     - "logrotate-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+#     - "logrotate-{{ ansible_distribution }}.yml"
+
+# - name: Service template
+#   ansible.builtin.template:
+#     src: nats-server.service.j2
+#     dest: /etc/systemd/system/nats-server.service
+#     mode: 0644
+#   notify: 
+#   - Reload systemd
+
+# - name: "Create file {{ nats_server_config }}"
+#   ansible.builtin.template: 
+#     src: nats-server.conf.j2 
+#     dest: "{{ nats_server_config }}" 
+#     owner: "{{ nats_user }}"
+#     group: "{{ nats_group }}"
+#     mode: 0644
+#   notify: 
+#   - Restart nats-server

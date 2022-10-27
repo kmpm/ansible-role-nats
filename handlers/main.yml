@@ -1,11 +1,16 @@
 ---
 # handlers file for nats
 
-- name: reload systemd
-  command: systemctl daemon-reload
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - not skip_systemd
 
-- name: restart nats-server
-  service: 
+- name: Restart nats-server
+  ansible.builtin.service: 
     name: nats-server 
     state: restarted
     enabled: yes
+  when:
+    - not skip_systemd

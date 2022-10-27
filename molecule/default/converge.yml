@@ -1,0 +1,30 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    skip_systemd: true
+    
+  # roles:
+  #   - {role: kmpm.nats}
+  tasks:
+    - name: "Run with nats-server"
+      ansible.builtin.include_role:
+        name: "kmpm.nats"
+      vars:
+        nats_app: nats-server
+        nats_ver: 'v2.9.3'
+
+    - name: Run with nats-top
+      ansible.builtin.include_role:
+        name: "kmpm.nats"
+      vars:
+        nats_app: nats-top
+        nats_ver: '0.5.3'
+
+    - name: "Run with natscli"
+      ansible.builtin.include_role:
+        name: "kmpm.nats"
+      vars:
+        nats_app: natscli
+        nats_ver: '0.0.34'

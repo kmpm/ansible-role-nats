@@ -1,4 +1,5 @@
 ---
 - name: Install some dependencies
-  apt:
+  ansible.builtin.apt:
     name: unzip
+    cache_valid_time: 3600

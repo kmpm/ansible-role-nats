@@ -1,9 +1,10 @@
 ---
-- name: install logrotate
-  apt:
+- name: Install logrotate
+  ansible.builtin.apt:
     name: logrotate
 
-- name: configure logrotate for nats-server
-  template: 
+- name: Configure logrotate for nats-server
+  ansible.builtin.template: 
     src: logrotate.j2 
     dest: "/etc/logrotate.d/nats-server" 
+    mode: 0644
