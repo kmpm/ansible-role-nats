@@ -1,0 +1,7 @@
+- name: Test natscli files
+  ansible.builtin.include_tasks: "verify_each.yml"
+  loop: 
+    - "{{ nats_bin_dir }}/nats"
+    - "/etc/profile.d/nats.sh"
+  loop_control:
+    loop_var: testpath

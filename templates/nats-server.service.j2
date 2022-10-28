@@ -1,14 +1,17 @@
+# # {{ ansible_managed }}
 [Unit]
 Description=NATS Enterprise Messaging System
 After=network.target
 
 [Service]
+PrivateTmp=true
 Type=simple
-PIDFile=/run/nats-server/nats-server.pid
-RuntimeDirectory=nats-server
+
 User=nats
 Group=nats
-ExecStart=/opt/nats/nats-server -c /etc/nats-server.conf
+ExecStart={{ nats_bin_dir }}/nats-server -c {{ nats_server_conf }}
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s SIGINT $MAINPID
 
 [Install]
 WantedBy=multi-user.target

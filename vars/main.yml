@@ -1,21 +1,24 @@
 ---
 # vars file for nats
+nats_map: "{{ nats_release_map[nats_app] }}"
+nats_used_ver: "{{ nats_map.v }}{{ latest_version | default(nats_ver) }}"
+
 nats_os: '{{ ansible_system | lower }}'
 nats_arch: '{{ nats_arch_map[ansible_architecture] }}'
-nats_platform: '{{ nats_os }}{{  nats_release_map[nats_app].sep }}{{ nats_arch }}'
+nats_platform: '{{ nats_os }}{{ nats_map.sep }}{{ nats_arch }}'
 
-nats_name: '{{ nats_release_map[nats_app].name }}{{  nats_release_map[nats_app].sep }}{{ nats_ver }}{{  nats_release_map[nats_app].sep }}{{ nats_platform }}'
-nats_zip: '{{ nats_name }}.{{  nats_release_map[nats_app].archive }}'
+nats_name: '{{ nats_map.name }}{{ nats_map.sep }}{{ nats_used_ver }}{{ nats_map.sep }}{{ nats_platform }}'
+nats_zip: '{{ nats_name }}.{{ nats_map.archive }}'
 nats_tmp_zip: /tmp/{{ nats_zip }}
 
 # https://github.com/nats-io/nats-server/releases/download/v2.9.3/nats-server-v2.9.3-linux-amd64.zip
 # https://github.com/nats-io/natscli/releases/download/v0.0.34/nats-0.0.34-linux-amd64.zip
 # https://github.com/nats-io/nats-top/releases/download/v0.5.3/nats-top_0.5.3_linux_amd64.tar.gz
 
-
-nats_url: '{{ nats_mirror }}/{{ nats_app }}/releases/download/{{ "" if nats_ver[0] == "v" else "v" }}{{ nats_ver }}/{{ nats_zip }}'
+nats_url: '{{ nats_mirror }}/{{ nats_app }}/releases/download/{{ "" if nats_used_ver[0] == "v" else "v" }}{{ nats_used_ver }}/{{ nats_zip }}'
 # nats_checksum: '{{ nats_checksums[nats_ver][nats_platform] }}'
 
+nats_bin_dir: '{{ nats_parent_install_dir }}/bin'
 nats_install_dir: '{{ nats_parent_install_dir }}/{{ nats_name }}'
-nats_link_src: '{{ nats_install_dir }}/{{ nats_release_map[nats_app].name }}'
-nats_link_dest: '{{ nats_parent_install_dir }}/bin/{{ nats_release_map[nats_app].name }}'
+nats_link_src: '{{ nats_install_dir }}/{{ nats_map.name }}'
+nats_link_dest: '{{ nats_bin_dir }}/{{ nats_map.name }}'

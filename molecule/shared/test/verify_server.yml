@@ -1,0 +1,45 @@
+- name: Test server files
+  ansible.builtin.include_tasks: "verify_each.yml"
+  loop: 
+    - "{{ nats_bin_dir }}/nats-server"
+    - "/etc/profile.d/nats.sh"
+    - "/var/log/nats-server.log"
+    - "/etc/nats/nats-server.conf"
+  loop_control:
+    loop_var: testpath
+
+- name: Test server config
+  ansible.builtin.command:
+    cmd: "{{ nats_bin_dir }}/nats-server -t -c /etc/nats/nats-server.conf"
+  register: result
+
+# - name: Show result of start
+#   ansible.builtin.debug:
+#     var: result
+
+- name: Check result of config test
+  ansible.builtin.assert:
+    that: result.rc == 0 and 'is valid' in result.stderr
+
+- name: Pid location might not exist
+  ansible.builtin.file:
+    path: /run/nats-server
+    mode: 0755
+    state: directory
+
+- name: Start server with config
+  ansible.builtin.command:
+    cmd: "{{ nats_bin_dir }}/nats-server -c /etc/nats/nats-server.conf"
+  async: 5
+  poll: 1
+  register: result
+  ignore_errors: True
+
+# - name: Show result of start
+#   ansible.builtin.debug:
+#     var: result
+# fatal: [default-debian11]: FAILED! => {"ansible_job_id": "595658153753.2257", "changed": false, "child_pid": 2261, "finished": 1, "msg": "Timeout exceeded", "results_file": "/root/.ansible_async/595658153753.2257", "started": 1, "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+- name: Check result of start
+  ansible.builtin.assert:
+    that: result.finished == 1 and 'Timeout exceeded' in result.msg

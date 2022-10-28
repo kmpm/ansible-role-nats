@@ -4,9 +4,21 @@
 - name: Verify
   hosts: all
   gather_facts: false
+  vars:
+    nats_parent_install_dir: /opt/nats-io
+    nats_bin_dir: "{{nats_parent_install_dir}}/bin"
+    do_server: true
+    do_top: true
+    do_cli: true
   tasks:
-  - name: stat natscli
-    
-  - name: Example assertion
-    ansible.builtin.assert:
-      that: true
+  - name: Test server
+    when: do_server
+    ansible.builtin.include_tasks: "../shared/test/verify_server.yml"
+  
+  - name: Test top
+    when: do_top
+    ansible.builtin.include_tasks: "../shared/test/verify_top.yml"
+
+  - name: Test server
+    when: do_cli
+    ansible.builtin.include_tasks: "../shared/test/verify_cli.yml"

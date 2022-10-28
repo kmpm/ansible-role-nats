@@ -1,5 +1,8 @@
 ---
 # defaults file for nats
+
+skip_systemd: false
+
 nats_mirror: https://github.com/nats-io
 
 nats_parent_install_dir: /opt/nats-io
@@ -18,30 +21,33 @@ nats_release_map:
     archive: zip
     sep: '-'
     mkdir: false
+    v: ''
   nats-server: 
     name: nats-server
     archive: zip
     sep: '-'
     mkdir: false
+    v: 'v'
   nats-top: 
     name: nats-top
     archive: tar.gz
     sep: '_'
     mkdir: true
+    v: ''
 
 # nats_version: 2.1.9
 # nats_folder: "{{ nats_parent_install_dir }}/nats-v{{ nats_version }}"
 
+# Server Specific
+nats_server_cluster: false
 nats_user: nats
 nats_group: nats
-
-# nats_cli_version: 0.0.21
-
-# nats_server_logfile: /var/log/nats-server.log
-# nats_server_pidfile: /run/nats-server/nats-server.pid
-# nats_server_config: /etc/nats-server.conf
+nats_server_logfile: /var/log/nats-server.log
+nats_conf_dir: /etc/nats
+nats_server_pidfile: /run/nats-server/nats-server.pid
+nats_server_conf: "{{ nats_conf_dir }}/nats-server.conf"
 
 
-# nats_server_port: 4222
-# nats_server_monitor_port: 8222
-# nats_server_cluster_port: 6222
+nats_server_port: 4222
+nats_server_monitor_port: 8222
+nats_server_cluster_port: 6222

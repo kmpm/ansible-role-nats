@@ -1,0 +1,58 @@
+---
+# tasks for nats-server
+
+- name: Create the nats group
+  become: true
+  become_user: root
+  ansible.builtin.group: name="{{ nats_group }}" state=present system=yes
+
+- name: Create the nats user
+  become: true
+  become_user: root
+  ansible.builtin.user: name="{{ nats_user }}" groups="{{ nats_group }}" append=yes
+
+- name: "Prepare {{ nats_server_logfile }}"
+  become: true
+  become_user: root
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ nats_server_logfile }}"
+    force: no
+    group: "{{ nats_group }}"
+    mode: 0664
+
+# - name: Include logrotate
+#   ansible.builtin.include_tasks: "{{ item }}"
+#   with_first_found:
+#     - "logrotate-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+#     - "logrotate-{{ ansible_distribution }}.yml"
+
+- name: Service template
+  become: true
+  become_user: root
+  ansible.builtin.template:
+    src: nats-server.service.j2
+    dest: /etc/systemd/system/nats-server.service
+    mode: 0644
+  notify: 
+  - Reload systemd
+
+- name: Config dir
+  become: true
+  become_user: root
+  ansible.builtin.file: 
+    path: "{{ nats_conf_dir }}" 
+    mode: 0755
+    state: directory
+
+- name: "Create file {{ nats_server_conf }}"
+  become: true
+  become_user: root
+  ansible.builtin.template: 
+    src: nats-server.conf.j2 
+    dest: "{{ nats_server_conf }}" 
+    owner: "{{ nats_user }}"
+    group: "{{ nats_group }}"
+    mode: 0640
+  notify: 
+  - Restart nats-server

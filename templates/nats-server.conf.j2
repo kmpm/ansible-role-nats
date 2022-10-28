@@ -1,7 +1,7 @@
-# Generated automatically by Ansible
+# {{ ansible_managed }}
 
 # interface to listen on
-host: {{ nats_address | default('0.0.0.0') }}
+host: {{ nats_server_host | default('0.0.0.0') }}
 
 # Client port of 4222 on interfaces defined above
 port: {{ nats_server_port }}
@@ -10,7 +10,7 @@ port: {{ nats_server_port }}
 # HTTP monitoring port default 8222
 monitor_port: {{ nats_server_monitor_port }} 
 
-
+{% if nats_server_cluster %}
 # This is for clustering multiple servers together.
 cluster {
 
@@ -36,6 +36,7 @@ cluster {
     {% endif %}
   ]
 }
+{% endif %}
 
 {% macro render_gatway(ng) -%}
   
@@ -64,10 +65,10 @@ gateway {
 {% endif %}
 
 # logging options
-debug:   true
+debug:   false
 trace:   false
-logtime: false
-log_file: "{{nats_server_logfile}}"
+# logtime: false
+# log_file: "{{nats_server_logfile}}"
 
 # pid file
-pid_file: "{{nats_server_pidfile}}"
+# pid_file: "{{nats_server_pidfile}}"

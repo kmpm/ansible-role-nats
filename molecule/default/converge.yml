@@ -4,18 +4,20 @@
   become: true
   vars:
     skip_systemd: true
-    
-  # roles:
-  #   - {role: kmpm.nats}
+    do_server: true
+    do_top: true
+    do_cli: true
   tasks:
     - name: "Run with nats-server"
+      when: do_server
       ansible.builtin.include_role:
         name: "kmpm.nats"
       vars:
         nats_app: nats-server
-        nats_ver: 'v2.9.3'
+        nats_ver: '2.9.3'
 
     - name: Run with nats-top
+      when: do_top
       ansible.builtin.include_role:
         name: "kmpm.nats"
       vars:
@@ -23,6 +25,7 @@
         nats_ver: '0.5.3'
 
     - name: "Run with natscli"
+      when: do_cli
       ansible.builtin.include_role:
         name: "kmpm.nats"
       vars:
