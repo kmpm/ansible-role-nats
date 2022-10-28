@@ -5,7 +5,7 @@
   ansible.builtin.systemd:
     daemon_reload: true
   when:
-    - not skip_systemd
+    - not skip_systemd | default(false)
 
 - name: Restart nats-server
   ansible.builtin.service: 
@@ -13,4 +13,4 @@
     state: restarted
     enabled: yes
   when:
-    - not skip_systemd
+    - not skip_systemd | default(false)

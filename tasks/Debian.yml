@@ -1,5 +1,7 @@
 ---
 - name: Install some dependencies
+  become: true
+  become_user: root
   ansible.builtin.apt:
     name: unzip
     cache_valid_time: 3600
